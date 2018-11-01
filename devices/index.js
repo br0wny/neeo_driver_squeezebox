@@ -353,7 +353,7 @@ const controllerWithDiscovery = {
 	}
 }
 
-var squeezeDevice = neeoapi.buildDevice('LMS')
+var squeezeDevice = neeoapi.buildDevice('LMS new')
 	.setManufacturer('Logitech')
 	.setType('MUSICPLAYER')
 
@@ -426,5 +426,5 @@ const DebugLog = (output) => {
 }
 
 module.exports = {
-	squeezeDevice
+	devices: [squeezeDevice]
 }
