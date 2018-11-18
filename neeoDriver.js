@@ -1,17 +1,15 @@
 'use strict';
 
 const neeoapi = require('neeo-sdk');
+const devices = require('.');
 
-const loadDevices = require('./devices');
-
-async function startDriver(brain) {
+function startDriver(brain) {
 	DebugLog('Start server');
-	let devices = await loadDevices();
 	neeoapi.startServer({
 		brain,
 		port: 6336,
 		name: 'neeoDriver',
-		devices: devices
+		devices
 	})
 	.then(() => {
 		DebugLog('Server started');
