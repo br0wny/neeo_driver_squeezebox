@@ -353,7 +353,7 @@ const controllerWithDiscovery = {
 	}
 }
 
-var squeezeDevice = neeoapi.buildDevice('LMS new')
+var squeezeDevice = neeoapi.buildDevice('LMS')
 	.setManufacturer('Logitech')
 	.setType('MUSICPLAYER')
 

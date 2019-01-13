@@ -4,21 +4,34 @@ This is a NEEO driver for Logitech Media Server / Squeezebox.
 
 It's a fork from https://github.com/clegendre/neeo_driver_squeezebox with many changes:
 
- - Restructured project for multi-driver approach --> See neeoDriver/devices/index.js
  - Async/Await for Req/Res
  - Telnet-Listener for notifications (New Song) --> Current Song info is updated when a new song is played
  - Changed Neeo "DeviceBuilding" use discovery
- - Neeo Brain is discovered automatically (not working on Windows)
+ - Neeo Brain is discovered automatically (not working on Windows: use neeoSdkOptions in package.json)
+ - Added Directorys for Current Playlist/Favorites/Music Library
+ - Changed structure to use NEEO CLI
 
 
 ## Instructions
 ### Step 1
-Edit config.js file (neeoDriver/devices/squeeze/config.js) to configure LMS ip address and port.
+Edit config.js file (devices/config.js) to configure LMS ip address and port.
+Edit package.json remove/configure brainHost in neeoSdkOptions.
 
 ### Step 2
+Install the used packages.
+```
+npm i
+```
+Start the driver
+
+```
+npm start
+```
+
+### Step 3
 SqueezeBox Players are dynamically discovered. Search for the device "LMS", choose it and then the discovered players are listed.
 
-### STEP 3
+### STEP 4
 Open player from home screen and add shortcuts:
  - Transport (Play/Stop/Pause)
  - Transport w/o Stop (Play/Pause)
@@ -35,8 +48,3 @@ Open player from home screen and add shortcuts:
    + Current Playlist
    + Favorites
    + Music Library
-
-### TODO/Planed Features (Currently not supported in NEEO SDK)
- + DONE Automatically add favorites
- + DONE Display playlist
- + (Sync Players)
