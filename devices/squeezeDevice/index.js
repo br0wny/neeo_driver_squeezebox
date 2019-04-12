@@ -318,7 +318,7 @@ const controllerWithDiscovery = {
 				thumbnailUri: item.url,
 				actionIdentifier: JSON.stringify({
 					action: "playFavorite",
-					id: item.name
+					id: item.id
 				})
 			});
 		});

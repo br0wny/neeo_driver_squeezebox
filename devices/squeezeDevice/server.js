@@ -169,7 +169,9 @@ function SqueezeServer(ipAddress, port, portTelnet) {
 		let resRemoteStream = await this.requestAsync(playerId, ["remote", "?"]);
 		if(resRemoteStream.result._remote == 1)
 		{
-			return `http://${this.ipAddress}:${this.port}/music/current/cover.jpg?player=${playerId}?no_cache=true`;
+			let noCache = Date.now();
+			
+			return `http://${this.ipAddress}:${this.port}/music/current/cover.jpg?player=${playerId}?noCache=${noCache}`;
 		}
 		
 		let res = await this.requestAsync(playerId, ["albums", "0", "10", "tags:j", `search:${artist} ${album} ${title}`]);
