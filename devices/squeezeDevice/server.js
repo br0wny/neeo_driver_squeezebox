@@ -1,6 +1,8 @@
 var jayson = require('jayson');
 //var inherits = require('super');
 var net = require('net');
+const request = require('request');
+xml2js = require('xml2js');
 
 function SqueezeServer(ipAddress, port, portTelnet) {
 	this.ipAddress = ipAddress;
@@ -166,7 +168,9 @@ function SqueezeServer(ipAddress, port, portTelnet) {
 		title = removeUnsupportedChar(title);
 		let resRemoteStream = await this.requestAsync(playerId, ["remote", "?"]);
 		if(resRemoteStream.result._remote == 1)
-			return `http://${this.ipAddress}:${this.port}/music/current/cover.jpg?player=${playerId}?noCache=true`;
+		{
+			return `http://${this.ipAddress}:${this.port}/music/current/cover.jpg?player=${playerId}?no_cache=true`;
+		}
 		
 		let res = await this.requestAsync(playerId, ["albums", "0", "10", "tags:j", `search:${artist} ${album} ${title}`]);
 		DebugLog(JSON.stringify(res.result.albums_loop));
@@ -176,7 +180,35 @@ function SqueezeServer(ipAddress, port, portTelnet) {
 	this.getFavorites = async function(playerId) {
 		let res = await this.requestAsync(playerId, ["favorites", "items", "0", "50", "want_url:1"]);
 		DebugLog(JSON.stringify(res.result.loop_loop));
+		for (let index = 0; index < res.result.loop_loop.length; index++) {
+			if(res.result.loop_loop[index].url)
+				if(res.result.loop_loop[index].url.includes('http://opml.radiotime.com/Tune.ashx?id='))
+				{
+					let tuneinId = res.result.loop_loop[index].url.slice(39).split('&')[0];
+					res.result.loop_loop[index].url = await this.getTuneInCover(tuneinId);
+				}
+		}
 		return Promise.resolve(res.result.loop_loop);
+	};
+
+	this.getTuneInCover = async function(tuneInId) {
+		var parser = new xml2js.Parser();
+		return new Promise((resolve, reject) => {
+			request.get('http://opml.radiotime.com/Describe.ashx?id=' + tuneInId, function (err, res, body) {
+				if(err)
+				{
+					DebugLog(err);
+					reject(err);
+				}
+				parser.parseString(body, function (err, result) {
+					if(result.opml.head[0].status[0] == 200)
+					{
+						resolve(result.opml.body[0].outline[0].station[0].logo[0]);
+					}
+					reject(err);
+				});
+			});
+		});
 	};
 
 	this.getApps = async function(playerId) {
@@ -271,6 +303,8 @@ function SqueezeServer(ipAddress, port, portTelnet) {
 };
 
 const removeUnsupportedChar = (str) => {
+	if(typeof str != 'string')
+		return '';
 	return str.replace("–", " ").replace("’", " ");
 }
 
