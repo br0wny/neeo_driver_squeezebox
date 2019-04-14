@@ -180,7 +180,7 @@ function SqueezeServer(ipAddress, port, portTelnet) {
 	};
 
 	this.getFavorites = async function(playerId) {
-		let res = await this.requestAsync(playerId, ["favorites", "items", "0", "50", "want_url:1"]);
+		let res = await this.requestAsync(playerId, ["favorites", "items", "0", "64", "want_url:1"]);
 		DebugLog(JSON.stringify(res.result.loop_loop));
 		for (let index = 0; index < res.result.loop_loop.length; index++) {
 			if(res.result.loop_loop[index].url)
@@ -270,15 +270,20 @@ function SqueezeServer(ipAddress, port, portTelnet) {
 		return playlist;
 	};
 
-	this.getDatabaseArtists = async function(playerId) {
-		let res = await this.requestAsync(playerId, ["artists", "0", "10000"]);
-		DebugLog("Database Artists: " + JSON.stringify(res.result.artists_loop));
-		return Promise.resolve(res.result.artists_loop);
+	this.getDatabaseArtists = async function(playerId, offset, limit) {
+		let resNumArtists = await this.requestAsync(playerId, ["info", "total", "artists", "?"]);
+		let res = await this.requestAsync(playerId, ["artists", offset, limit]);
+		DebugLog("Database Artists:\nCount total: " + resNumArtists.result._artists + "\nList:\n" + JSON.stringify(res.result.artists_loop, undefined, 2));
+		return Promise.resolve(
+			{
+				total: resNumArtists.result._artists,
+				list: res.result.artists_loop
+			});
 	};
 
-	this.getDatabaseAlbumsOfArtist = async function(playerId, artistId) {
-		let res = await this.requestAsync(playerId, ["albums", "0", "100", "artist_id:" + artistId, "tags:jl"]);
-
+	this.getDatabaseAlbumsOfArtist = async function(playerId, artistId, offset, limit) {
+		let resNumAlbums = await this.requestAsync(playerId, ["albums", "0", "1000", "artist_id:" + artistId, "tags:CC"]);
+		let res = await this.requestAsync(playerId, ["albums", offset, limit, "artist_id:" + artistId, "tags:jl"]);
 		let mappedRes = [];
 		res.result.albums_loop.map((item) => {
 			mappedRes.push({
@@ -287,20 +292,34 @@ function SqueezeServer(ipAddress, port, portTelnet) {
 				url: `http://${this.ipAddress}:${this.port}/music/${item.artwork_track_id}/cover.jpg`
 			});
 		});
-		DebugLog("Database Albums of Artist: " + JSON.stringify(mappedRes));
-		return Promise.resolve(mappedRes);
+		DebugLog("Database Albums of Artist:\nCount total: " + resNumAlbums.result.count + "\nList:\n" + JSON.stringify(mappedRes, undefined, 2));
+		return Promise.resolve(
+			{
+				total: resNumAlbums.result.count,
+				list: mappedRes
+			});
 	};
 
-	this.getDatabaseSongsOfAlbum = async function(playerId, albumId) {
-		let res = await this.requestAsync(playerId, ["songs", "0", "10000", "album_id:" + albumId, "sort:albumtrack"]);
-		DebugLog("Songs of Album: " + JSON.stringify(res.result.titles_loop));
-		return Promise.resolve(res.result.titles_loop);
+	this.getDatabaseSongsOfAlbum = async function(playerId, albumId, offset, limit) {
+		let resNumSongs = await this.requestAsync(playerId, ["songs", "0", "10000", "album_id:" + albumId, "tags:CC"]);
+		let res = await this.requestAsync(playerId, ["songs", offset, limit, "album_id:" + albumId, "sort:albumtrack"]);
+		DebugLog("Songs of Album:\nCount total: " + resNumSongs.result.count + "\nList:\n" + JSON.stringify(res.result.titles_loop, undefined, 2));
+		return Promise.resolve(
+			{
+				total: resNumSongs.result.count,
+				list: res.result.titles_loop
+			});
 	};
 
-	this.getDatabaseSongsOfArtist = async function(playerId, artistId) {
-		let res = await this.requestAsync(playerId, ["songs", "0", "10000", "artist_id:" + artistId, "sort:albumtrack"]);
-		DebugLog("Songs of Artist: " + JSON.stringify(res.result.titles_loop));
-		return Promise.resolve(res.result.titles_loop);
+	this.getDatabaseSongsOfArtist = async function(playerId, artistId, offset, limit) {
+		let resNumSongs = await this.requestAsync(playerId, ["songs", "0", "10000", "artist_id:" + artistId, "tags:CC"]);
+		let res = await this.requestAsync(playerId, ["songs", offset, limit, "artist_id:" + artistId, "sort:albumtrack"]);
+		DebugLog("Songs of Artist:\nCount total: " + resNumSongs.result.count + "\nList:\n" + JSON.stringify(res.result.titles_loop, undefined, 2));
+		return Promise.resolve(
+			{
+				total: resNumSongs.result.count,
+				list: res.result.titles_loop
+			});
 	};
 };
 

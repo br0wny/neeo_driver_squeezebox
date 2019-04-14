@@ -7,7 +7,9 @@ const lms = new SqueezeServer(config.lms.ipAddress, config.lms.port, config.lms.
 const listLibraryBaseMenu = neeoapi.buildBrowseList({
 								title: `Music Library`,
 								totalMatchingItems: 1,
-								browseIdentifier: ".",
+								browseIdentifier: JSON.stringify({
+									path: "."
+								}),
 								offset: 0,
 								limit: 10
 							})
@@ -134,7 +136,7 @@ const controllerWithDiscovery = {
 			totalMatchingItems: listItems.length,
 			browseIdentifier: params.browseIdentifier || '.',
 			offset: params.offset || 0,
-			limit: params.limit,
+			limit: params.limit || 64,
 		});
 		list.prepareItemsAccordingToOffsetAndLimit(listItems).map((item) => {
 			list.addListItem({
@@ -168,15 +170,16 @@ const controllerWithDiscovery = {
 
 		if (browseIdentifier.path == "artists" || browseIdentifier.path == ".")
 		{
-			const listItems = await lms.getDatabaseArtists(deviceId);
-			const list = neeoapi.buildBrowseList({
+			let listOptions = {
 				title: "Artists",
-				totalMatchingItems: listItems.length,
-				browseIdentifier: params.browseIdentifier || '.',
+				browseIdentifier: JSON.stringify(browseIdentifier),
 				offset: params.offset || 0,
-				limit: params.limit,
-			});
-			list.prepareItemsAccordingToOffsetAndLimit(listItems).map((item) => {
+				limit: params.limit || 64
+			};
+			const listItems = await lms.getDatabaseArtists(deviceId, params.offset || 0, params.limit || 64);
+			listOptions.totalMatchingItems = listItems.total;
+			const list = neeoapi.buildBrowseList(listOptions);
+			listItems.list.forEach(item => {
 				list.addListItem({
 					title: item.artist,
 					//label: item.artist, ?? MBMB Addition Info?
@@ -191,18 +194,19 @@ const controllerWithDiscovery = {
 			return list;
 		}else if (browseIdentifier.path == "artists/albums")
 		{
-			const listItems = await lms.getDatabaseAlbumsOfArtist(deviceId, browseIdentifier.artistId);
-			let numOfItems = listItems.length;
+			let listOptions = {
+				title: browseIdentifier.artistName,
+				browseIdentifier: params.browseIdentifier,
+				offset: params.offset || 0,
+				limit: params.limit || 64
+			};
+			const listItems = await lms.getDatabaseAlbumsOfArtist(deviceId, browseIdentifier.artistId, listOptions.offset, listOptions.limit);
+			let numOfItems = listItems.total;
 			if(numOfItems > 1)
 				numOfItems++;
-			const list = neeoapi.buildBrowseList({
-				title: browseIdentifier.artistName,
-				totalMatchingItems: numOfItems,
-				browseIdentifier: params.browseIdentifier || '.',
-				offset: params.offset || 0,
-				limit: params.limit,
-			});
-			list.prepareItemsAccordingToOffsetAndLimit(listItems).map((item) => {
+			listOptions.totalMatchingItems = numOfItems;
+			const list = neeoapi.buildBrowseList(listOptions);
+			listItems.list.forEach(item => {
 				if(numOfItems > 1)
 				{
 					numOfItems = 0; //Only add one time
@@ -236,20 +240,21 @@ const controllerWithDiscovery = {
 			return list;
 		}else if (browseIdentifier.path == "artists/albums/titles")
 		{
+			let listOptions = {
+				title: browseIdentifier.albumName,
+				browseIdentifier: params.browseIdentifier,
+				offset: params.offset || 0,
+				limit: params.limit || 64
+			};
 			let listItems;
 			let listIdx = 0;
 			if(browseIdentifier.albumId == "_all")
-				listItems = await lms.getDatabaseSongsOfArtist(deviceId, browseIdentifier.artistId);
+				listItems = await lms.getDatabaseSongsOfArtist(deviceId, browseIdentifier.artistId, listOptions.offset, listOptions.limit);
 			else
-				listItems = await lms.getDatabaseSongsOfAlbum(deviceId, browseIdentifier.albumId);
-			const list = neeoapi.buildBrowseList({
-				title: browseIdentifier.albumName,
-				totalMatchingItems: listItems.length,
-				browseIdentifier: params.browseIdentifier || '.',
-				offset: params.offset || 0,
-				limit: params.limit,
-			});
-			list.prepareItemsAccordingToOffsetAndLimit(listItems).map((item) => {
+				listItems = await lms.getDatabaseSongsOfAlbum(deviceId, browseIdentifier.albumId, listOptions.offset, listOptions.limit);
+			listOptions.totalMatchingItems = listItems.total;
+			const list = neeoapi.buildBrowseList(listOptions);
+			listItems.list.forEach(item => {
 				if(browseIdentifier.albumId == "_all")
 				{
 					list.addListItem({
@@ -308,9 +313,9 @@ const controllerWithDiscovery = {
 		const list = neeoapi.buildBrowseList({
 			title: "Favorites",
 			totalMatchingItems: listItems.length,
-			browseIdentifier: params.browseIdentifier || '.',
+			browseIdentifier: params.browseIdentifier,
 			offset: params.offset || 0,
-			limit: params.limit,
+			limit: params.limit || 64,
 		});
 		list.prepareItemsAccordingToOffsetAndLimit(listItems).map((item) => {
 			list.addListItem({
