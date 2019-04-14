@@ -130,15 +130,15 @@ const controllerWithDiscovery = {
 		return res.url;
 	},
 	getCurrentPlaylist: async function getCurrentPlaylist (deviceId, params) {
-		const listItems = await lms.getCurrentPlaylist(deviceId);
-		const list = neeoapi.buildBrowseList({
+		let listOptions = {
 			title: "Current Playlist",
-			totalMatchingItems: listItems.length,
-			browseIdentifier: params.browseIdentifier || '.',
 			offset: params.offset || 0,
-			limit: params.limit || 64,
-		});
-		list.prepareItemsAccordingToOffsetAndLimit(listItems).map((item) => {
+			limit: params.limit || 64
+		};
+		const listItems = await lms.getCurrentPlaylist(deviceId, listOptions.offset, listOptions.limit);
+		listOptions.totalMatchingItems = listItems.total;
+		const list = neeoapi.buildBrowseList(listOptions);
+		listItems.list.forEach(item => {
 			list.addListItem({
 				title: item.title,
 				label: item.artist,
@@ -176,7 +176,7 @@ const controllerWithDiscovery = {
 				offset: params.offset || 0,
 				limit: params.limit || 64
 			};
-			const listItems = await lms.getDatabaseArtists(deviceId, params.offset || 0, params.limit || 64);
+			const listItems = await lms.getDatabaseArtists(deviceId, listOptions.offset, listOptions.limit);
 			listOptions.totalMatchingItems = listItems.total;
 			const list = neeoapi.buildBrowseList(listOptions);
 			listItems.list.forEach(item => {

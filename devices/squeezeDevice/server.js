@@ -229,11 +229,14 @@ function SqueezeServer(ipAddress, port, portTelnet) {
 		return this.requestAsync(playerId, ["favorites", "playlist", "play", "item_id:" + favorite]);
 	};
 
-	this.getCurrentPlaylist = async function(playerId) {
+	this.getCurrentPlaylist = async function(playerId, offset, limit) {
 		let resNumTracks = await this.requestAsync(playerId, ["playlist", "tracks", "?"]);
 		let resCurrentIndex = await this.requestAsync(playerId, ["playlist", "index", "?"]);
 		let playlist = [];
-		for (let i = 0; i < resNumTracks.result._tracks; i++) {
+		let endIndex = offset + limit;
+		if(endIndex > resNumTracks.result._tracks)
+			endIndex = resNumTracks.result._tracks;
+		for (let i = offset; i < endIndex; i++) {
 			let resSongPath = await this.requestAsync(playerId, ["playlist", "path", i.toString(), "?"]);
 			let resSongInfo = await this.requestAsync(playerId, ["songinfo", "0", "100", "url:" + resSongPath.result._path, "tags:alJxNK"]);
 			let resPlaylistEntry = {
@@ -272,7 +275,11 @@ function SqueezeServer(ipAddress, port, portTelnet) {
 			playlist.push(resPlaylistEntry);
 		}
 		DebugLog("Current Playlist: " + JSON.stringify(playlist, undefined, 2));
-		return playlist;
+		return Promise.resolve(
+			{
+				total: resNumTracks.result._tracks,
+				list: playlist
+			});
 	};
 
 	this.getDatabaseArtists = async function(playerId, offset, limit) {
