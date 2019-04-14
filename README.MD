@@ -38,6 +38,7 @@ Open player from home screen and add shortcuts:
  - Transport Scan (Previous/Next)
  - Play random album
  - Play random track
+ - Unsync Player
  - Favorites (Added in config.js / displayed as buttons)
  - Current Song:
    + Artist
@@ -48,3 +49,4 @@ Open player from home screen and add shortcuts:
    + Current Playlist
    + Favorites
    + Music Library
+   + Sync player to (other player)
