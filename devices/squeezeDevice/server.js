@@ -60,6 +60,30 @@ function SqueezeServer(ipAddress, port, portTelnet) {
 		return Promise.resolve(res.result.players_loop);
 	}
 
+	this.getPlayersToSync = async function(playerId, offset, limit) {
+		let res = await this.getConnectedPlayers();
+		let playersToSync = [];
+		res.forEach(player => {
+			if(player.playerid != playerId){
+				playersToSync.push(player);
+			}
+		});
+
+		return Promise.resolve(
+			{
+				total: playersToSync.length,
+				list: playersToSync
+			});
+	};
+
+	this.syncPlayers = async function(playerId, playerToSync) {
+		return this.requestAsync(playerId, ["sync", playerToSync]);
+	};
+
+	this.unsyncPlayer = async function(playerId) {
+		return this.requestAsync(playerId, ["sync", "-"]);
+	};
+
 	this.getPowerState = async function(playerId) {
 		let res = await this.requestAsync(playerId, ["power", "?"]);
 		return Promise.resolve(res.result._power);

@@ -29,22 +29,22 @@ const newSongCallback = async (deviceId) =>{
 			uniqueDeviceId: deviceId,
 			component: 'label-artist',
 			value: songInfo.artist
-		});
+		}).catch((err) => {DebugLog("Update Artist failed " + err.message)});
 		updateCallbackReference({
 			uniqueDeviceId: deviceId,
 			component: 'label-title',
 			value: songInfo.title
-		});
+		}).catch((err) => {DebugLog("Update Title failed " + err.message)});
 		updateCallbackReference({
 			uniqueDeviceId: deviceId,
 			component: 'label-album',
 			value: songInfo.album
-		});
+		}).catch((err) => {DebugLog("Update Album failed " + err.message)});
 		updateCallbackReference({
 			uniqueDeviceId: deviceId,
 			component: 'albumcover',
 			value: songInfo.url
-		});
+		}).catch((err) => {DebugLog("Update Cover failed " + err.message)});
 	}
 }
 
@@ -103,6 +103,9 @@ const controllerWithDiscovery = {
 				case 'RANDOM ALBUM':
 					lms.playRandomAlbum(deviceId);
 					break;
+				case 'UNSYNC':
+					lms.unsyncPlayer(deviceId);
+					break;
 				default:
 					if(config.squeeze.favorites.find((fav) => fav.name === name))
 					{
@@ -146,7 +149,8 @@ const controllerWithDiscovery = {
 				actionIdentifier: JSON.stringify({
 					action: "playIndex",
 					index: item.index
-				})
+				}),
+				uiAction: "close"
 			});
 		});
 		return list;
@@ -271,7 +275,8 @@ const controllerWithDiscovery = {
 							titleId: item.id,
 							titleName: item.title,
 							listIndex: listIdx++
-						})
+						}),
+						uiAction: "close"
 					});
 				}else{
 					list.addListItem({
@@ -288,7 +293,8 @@ const controllerWithDiscovery = {
 							titleId: item.id,
 							titleName: item.title,
 							listIndex: listIdx++
-						})
+						}),
+						uiAction: "close"
 					});
 				}
 			});
@@ -324,7 +330,8 @@ const controllerWithDiscovery = {
 				actionIdentifier: JSON.stringify({
 					action: "playFavorite",
 					id: item.id
-				})
+				}),
+				uiAction: "close"
 			});
 		});
 		return list;
@@ -334,6 +341,36 @@ const controllerWithDiscovery = {
 		if(actionIdentifier.action == "playFavorite")
 		{
 			lms.playFavorite(deviceId, actionIdentifier.id);
+		}
+	},
+	getPlayersToSyncList: async function getPlayersToSyncList (deviceId, params) {
+		let listOptions = {
+			title: "Players",
+			offset: params.offset || 0,
+			limit: params.limit || 64
+		};
+		const listItems = await lms.getPlayersToSync(deviceId, listOptions.offset, listOptions.limit);
+		listOptions.totalMatchingItems = listItems.total;
+		const list = neeoapi.buildBrowseList(listOptions);
+		listItems.list.forEach(item => {
+			list.addListItem({
+				title: item.name,
+				label: item.playerid,
+				actionIdentifier: JSON.stringify({
+					action: "sync",
+					id: item.playerid
+				}),
+				uiAction: "close"
+			});
+		});
+		return list;
+	},
+	actionPlayersToSyncList: function actionPlayersToSyncList (deviceId, actionId) {
+		const actionIdentifier = JSON.parse(actionId.actionIdentifier);
+		if(actionIdentifier.action == "sync")
+		{
+			DebugLog(`Sync player ${deviceId} to ${actionIdentifier.id}`);
+			lms.syncPlayers(actionIdentifier.id, deviceId);
 		}
 	},
 	discoverConectedPlayers: async function discoverConectedPlayers() {
@@ -375,6 +412,10 @@ var squeezeDevice = neeoapi.buildDevice('LMS')
 		name: 'RANDOM ALBUM',
 		label: 'Play random album'
 	})
+	.addButton({
+		name: 'UNSYNC',
+		label: 'Unsync player'
+	})
 	.addButtonHandler(controllerWithDiscovery.onButtonPressed)
 	.addTextLabel({
 		name: 'label-title',
@@ -415,6 +456,13 @@ var squeezeDevice = neeoapi.buildDevice('LMS')
 	}, {
 		getter: controllerWithDiscovery.getFavoritesList,
 		action: controllerWithDiscovery.actionFavoritesList
+	})
+	.addDirectory({
+		name: 'Sync Players',
+		label: 'Sync with Player'
+	},{
+		getter: controllerWithDiscovery.getPlayersToSyncList,
+		action: controllerWithDiscovery.actionPlayersToSyncList
 	})
 	.enableDiscovery({
 		headerText: 'Add network players you want to control',
