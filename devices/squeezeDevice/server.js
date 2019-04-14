@@ -234,39 +234,44 @@ function SqueezeServer(ipAddress, port, portTelnet) {
 		let resCurrentIndex = await this.requestAsync(playerId, ["playlist", "index", "?"]);
 		let playlist = [];
 		for (let i = 0; i < resNumTracks.result._tracks; i++) {
-			let resRemote = await this.requestAsync(playerId, ["playlist", "remote", i.toString(), "?"]);
-			let resArtist = await this.requestAsync(playerId, ["playlist", "artist", i.toString(), "?"]);
-			let resTitle = await this.requestAsync(playerId, ["playlist", "title", i.toString(), "?"]);
-			
-			if(resRemote.result._remote == 0)
-			{
-				let resAlbum = await this.requestAsync(playerId, ["playlist", "album", i.toString(), "?"]);
-				let url = await this.getCoverUrl(playerId, resArtist.result._artist, resAlbum.result._album, resTitle.result._title);
+			let resSongPath = await this.requestAsync(playerId, ["playlist", "path", i.toString(), "?"]);
+			let resSongInfo = await this.requestAsync(playerId, ["songinfo", "0", "100", "url:" + resSongPath.result._path, "tags:alJxNK"]);
+			let resPlaylistEntry = {
+				index: i,
+				title: '',
+				artist: '',
+				album: '',
+				url: ''
+			};
+			resSongInfo.result.songinfo_loop.forEach(info => {
+				if(info.title){
+					resPlaylistEntry.title = info.title;
+				}else if(info.artist){
+					resPlaylistEntry.artist = info.artist;
+				}else if(info.album){
+					resPlaylistEntry.album = info.album;
+				}else if(info.remote){
+					resPlaylistEntry.remote = info.remote;
+				}else if(info.remote_title){
+					resPlaylistEntry.title = info.remote_title;
+				}else if(info.artwork_url){
+					if(info.artwork_url.includes('http://')){
+						resPlaylistEntry.url = info.artwork_url;
+					}else{
+						resPlaylistEntry.url = `http://${this.ipAddress}:${this.port}/${info.artwork_url}`;
+					}
+				}else if(info.artwork_track_id){
+					resPlaylistEntry.url = `http://${this.ipAddress}:${this.port}/music/${info.artwork_track_id}/cover.jpg`;
+				}
+			});
 
-				if(i == resCurrentIndex.result._index)
-					resTitle.result._title = "PLAYING " + resTitle.result._title;
+			if(i == resCurrentIndex.result._index)
+				resPlaylistEntry.title = "PLAYING " + resPlaylistEntry.title;
+			resPlaylistEntry
 
-				playlist.push({
-					artist: resArtist.result._artist,
-					title: resTitle.result._title,
-					album: resAlbum.result._album,
-					index: i,
-					url
-				});
-			}else{
-				if(i == resCurrentIndex.result._index)
-					resTitle.result._title = "PLAYING " + resTitle.result._title;
-				
-				playlist.push({
-					artist: resArtist.result._artist,
-					title: resTitle.result._title,
-					album: "",
-					index: i,
-					url: ""
-				});
-			}
+			playlist.push(resPlaylistEntry);
 		}
-		DebugLog("Current Playlist: " + JSON.stringify(playlist));
+		DebugLog("Current Playlist: " + JSON.stringify(playlist, undefined, 2));
 		return playlist;
 	};
 
